@@ -4,16 +4,12 @@ import Database from "better-sqlite3";
 import { JSDOM } from "jsdom";
 import createDOMPurify from "dompurify";
 import juice from "juice";
-import dotenv from 'dotenv'
-dotenv.config();
-
+import cfg from "./config.mjs";
 const db = new Database("shadowmail.db");
-
-
 const config = {
     imap: {
-        user: process.env.USER,
-        password: process.env.PASSWORD, // Gmail app password
+        user: cfg.USER,
+        password: cfg.PASSWORD, // Gmail app password
         host: "imap.gmail.com",
         port: 993,
         tls: true,
@@ -23,7 +19,13 @@ const config = {
         },
     },
 };
-
+try {
+  const connection = await imaps.connect(config);
+  console.log('✅ Connected!');
+  await connection.end();
+} catch (err) {
+  console.error('❌ IMAP error:', err);
+}
 async function readMessages(connection) {
     try {
         await connection.openBox("[Gmail]/All Mail");
