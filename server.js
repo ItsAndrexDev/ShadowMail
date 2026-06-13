@@ -4,7 +4,7 @@ import cookieParser from "cookie-parser";
 import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
 import cors from "cors"
-import parseMails from "./mailparse.js";
+import parseMails from "./parseMails.mjs";
 
 const db = new Database("shadowmail.db");
 
@@ -31,9 +31,9 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static("public"));
 
-
+console.log("prasing pre")
 parseMails();
-
+console.log("prasing post")
 
 function getSession(cookie) {
     const session = db.prepare("SELECT * FROM valid_sessions WHERE id = ?", { readonly: true }).get(cookie);
