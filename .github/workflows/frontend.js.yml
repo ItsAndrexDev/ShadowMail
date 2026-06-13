@@ -34,3 +34,17 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm install
       - run: npm run build
+  deploy:
+    needs: build
+    runs-on: self-hosted
+    # Only deploy when code hits the master branch
+    if: github.ref == 'refs/heads/master' 
+    steps:
+      - name: Deploy to Production
+        run: |
+          cd /home/andrex/shadowmail/
+          git pull origin master
+          cd frontend
+          npm install
+          npm run build
+          sudo systemctl restart shadowmail
