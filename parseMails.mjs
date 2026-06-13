@@ -12,7 +12,7 @@ const IMAP_CONFIG = {
     imap: {
         user: cfg.USER,
         password: cfg.PASSWORD,
-        host: "imap.gmail.com",
+        host: cfg.HOST,
         port: 993,
         tls: true,
         authTimeout: 3000,
@@ -126,6 +126,9 @@ async function connectWithRetry() {
         }
     }
 }
+
+
+
 
 function startKeepalive(getConnection) {
     return setInterval(() => {
