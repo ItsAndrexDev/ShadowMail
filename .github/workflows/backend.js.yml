@@ -6,8 +6,16 @@ name: Backend CI
 on:
   push:
     branches: [ "master" ]
+    paths:
+      - '**'
+      - '!frontend/**'
+      - '!**/.github/workflows/**'
   pull_request:
     branches: [ "master" ]
+    paths:
+      - '**'
+      - '!frontend/**'
+      - '!**/.github/workflows/**'
   workflow_dispatch: 
 jobs:
   build:
