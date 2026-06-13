@@ -31,9 +31,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static("frontend/dist"));
 
-console.log("prasing pre")
 parseMails();
-console.log("prasing post")
 
 function getSession(cookie) {
     const session = db.prepare("SELECT * FROM valid_sessions WHERE id = ?", { readonly: true }).get(cookie);

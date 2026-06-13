@@ -8,8 +8,8 @@
         <div class="hero-content">
             <h1>Secure Temporary Email</h1>
             <p>
-                Protect your privacy with disposable email addresses. No
-                registration required, instant activation, complete anonymity.
+                Protect your privacy with disposable email addresses.
+                Instant activation, complete anonymity.
             </p>
             <button
                 class="btn btn-primary"

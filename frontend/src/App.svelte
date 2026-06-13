@@ -161,7 +161,7 @@
           class="social-link"
           aria-label="GitHub"
           on:click={() =>
-            window.open("https://github.com/AndrewSimonDew", "_blank")}
+            window.open("https://github.com/ItsAndrexDev", "_blank")}
         >
           <svg
             width="20"
