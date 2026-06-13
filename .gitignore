@@ -1,5 +1,7 @@
 config.mjs
 *.db
+frontend/dist
+frontend/public
 node_modules
 # Logs
 *logs

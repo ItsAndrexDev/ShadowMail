@@ -40,7 +40,7 @@
       </div>
       <div class="nav-buttons" id="navButtons">
         <button class="btn btn-secondary" on:click={() => showPage("login")}
-          >Sign In</button
+          >Log In</button
         >
         <button class="btn btn-primary" on:click={() => showPage("register")}
           >Get Started</button
