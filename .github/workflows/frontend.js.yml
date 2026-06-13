@@ -45,6 +45,7 @@ jobs:
           cd /home/andrex/shadowmail/
           git pull origin master
           cd frontend
+          rm -rf node_modules/ package-lock.json
           npm install
           npm run build
           sudo systemctl restart shadowmail
