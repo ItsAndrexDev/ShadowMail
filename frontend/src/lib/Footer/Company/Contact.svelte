@@ -121,14 +121,9 @@
           <h3>Connect With Us</h3>
           <div class="social-links">
             <a
-              href="https://github.com/AndrewSimonDew"
+              href="https://github.com/ItsAndrexDev"
               target="_blank"
               rel="noopener noreferrer">GitHub</a
-            >
-            <a
-              href="https://support.shadowmail.win"
-              target="_blank"
-              rel="noopener noreferrer">Discord</a
             >
           </div>
         </div>
