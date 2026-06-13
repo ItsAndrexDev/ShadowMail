@@ -17,6 +17,8 @@ on:
       - '!frontend/**'
       - '!**/.github/workflows/**'
   workflow_dispatch: 
+
+  
 jobs:
   build:
 
@@ -36,3 +38,16 @@ jobs:
         IMAP_USER: ${{secrets.IMAP_USER}}
         IMAP_PASS: ${{secrets.IMAP_PASS}}
         HOST: ${{secrets.HOST}}
+  deploy:
+    needs: build
+    runs-on: self-hosted
+    # Only deploy when code hits the master branch
+    if: github.ref == 'refs/heads/master' 
+    steps:
+      - name: Deploy to Production
+        run: |
+          cd /home/andrex/shadowmail
+          git pull origin master
+          npm install
+          sudo systemctl restart shadowmail
+  
