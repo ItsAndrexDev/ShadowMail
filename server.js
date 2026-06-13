@@ -29,7 +29,7 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 app.use(cookieParser());
-app.use(express.static("public"));
+app.use(express.static("frontend/dist"));
 
 console.log("prasing pre")
 parseMails();
