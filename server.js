@@ -7,6 +7,7 @@ import cors from "cors"
 import parseMails from "./parseMails.mjs";
 import updateUsercount from "./usercountPolling.mjs";
 import { readFile } from "fs";
+import path from "path";
 const db = new Database("shadowmail.db");
 
 
@@ -33,7 +34,8 @@ app.use(cookieParser());
 app.use(express.static("frontend/dist"));
 
 app.get("/user-count", (req,res) => {
-    readFile("usercount.txt",(err,data) => {
+    const filePath = path.join(__dirname, "usercount.txt")
+    readFile(filePath,(err,data) => {
         if (err) {
             console.error(err);
             return res.status(500).send('Could not read the file.');
