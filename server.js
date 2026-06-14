@@ -41,7 +41,7 @@ app.get("/user-count", (req,res) => {
     readFile(filePath,(err,data) => {
         if (err) {
             console.error(err);
-            return res.status(500).send('Could not read the file.');
+            return res.status(500).send(err);
         }
         res.type("text/plain")
         res.send(data)
