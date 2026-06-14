@@ -12,7 +12,7 @@ export default async function updateUsercount() {
         const countString = result.total.toString();
         try {
             const __filename = fileURLToPath(import.meta.url);
-            const __dirname = dirname(__filename);
+            const __dirname = path.dirname(__filename);
             const filePath = path.join(__dirname, "usercount.txt")
             await writeFile(filePath,countString);
         } catch(err) {

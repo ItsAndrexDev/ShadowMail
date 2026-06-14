@@ -36,7 +36,7 @@ app.use(express.static("frontend/dist"));
 
 app.get("/user-count", (req,res) => {
     const __filename = fileURLToPath(import.meta.url);
-    const __dirname = dirname(__filename);
+    const __dirname = path.dirname(__filename);
     const filePath = path.join(__dirname, "usercount.txt")
     readFile(filePath,(err,data) => {
         if (err) {
