@@ -1,3 +1,4 @@
+![Users](https://img.shields.io/endpoint?url=https://shadowmail.win/user-count&v=1)
 # ShadowMail
 
 **ShadowMail** is a secure, anonymous, and reactive temporary email service designed to protect your privacy. Whether you need to sign up for a service, test a platform, or avoid spam, ShadowMail provides a reliable solution without requiring any personal data.
