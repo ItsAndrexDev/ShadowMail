@@ -9,6 +9,7 @@ import updateUsercount from "./usercountPolling.mjs";
 import { readFile } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { count } from "console";
 const db = new Database("shadowmail.db");
 
 
@@ -41,10 +42,19 @@ app.get("/user-count", (req,res) => {
     readFile(filePath,(err,data) => {
         if (err) {
             console.error(err);
-            return res.status(500).send(err);
+            return res.json({
+                schemaVersion:1,
+                label:"Users",
+                message: "loading",
+                color: "green"
+            })
         }
-        res.type("text/plain")
-        res.send(data)
+        res.json({
+            schemaVersion:1,
+            label:"Users",
+            message: data.toString().trim(),
+            color: "green"
+        })
     })
     
 })
