@@ -8,6 +8,7 @@ import parseMails from "./parseMails.mjs";
 import updateUsercount from "./usercountPolling.mjs";
 import { readFile } from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 const db = new Database("shadowmail.db");
 
 
@@ -34,6 +35,8 @@ app.use(cookieParser());
 app.use(express.static("frontend/dist"));
 
 app.get("/user-count", (req,res) => {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
     const filePath = path.join(__dirname, "usercount.txt")
     readFile(filePath,(err,data) => {
         if (err) {
