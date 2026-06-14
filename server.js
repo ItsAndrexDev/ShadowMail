@@ -5,7 +5,8 @@ import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
 import cors from "cors"
 import parseMails from "./parseMails.mjs";
-
+import updateUsercount from "./usercountPolling.mjs";
+import { readFile } from "fs";
 const db = new Database("shadowmail.db");
 
 
@@ -31,7 +32,20 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static("frontend/dist"));
 
+app.get("/user-count", (req,res) => {
+    readFile("usercount.txt",(err,data) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).send('Could not read the file.');
+        }
+        res.type("text/plain")
+        res.send(data)
+    })
+    
+})
+// polling functions
 parseMails();
+updateUsercount();
 
 function getSession(cookie) {
     const session = db.prepare("SELECT * FROM valid_sessions WHERE id = ?", { readonly: true }).get(cookie);

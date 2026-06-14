@@ -1,5 +1,6 @@
 config.mjs
 *.db
+usercount.txt
 frontend/dist
 frontend/public
 node_modules
