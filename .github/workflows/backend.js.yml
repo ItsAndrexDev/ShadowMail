@@ -47,8 +47,8 @@ jobs:
       - name: Deploy to Production
         run: |
           cd /home/andrex/shadowmail
-          git pull origin master
           rm -rf node_modules/ package-lock.json
+          git pull origin master
           npm install
           sudo systemctl restart shadowmail
   
