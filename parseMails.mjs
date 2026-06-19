@@ -25,6 +25,7 @@ const IMAP_CONFIG = {
 const POLL_INTERVAL_MS     = 2000;
 const READ_TIMEOUT_MS      = 15000;
 const SEARCH_TIMEOUT_MS    = 10000;
+const DELETE_TIMEOUT_MS    = 10000;
 const KEEPALIVE_INTERVAL_MS = 30000;
 const RECONNECT_EVERY      = 300; // reconnect every ~10 minutes (300 × 2s polls)
 
@@ -35,6 +36,22 @@ function withTimeout(promise, ms, label) {
         setTimeout(() => reject(new Error(`Timeout: "${label}" exceeded ${ms}ms`)), ms)
     );
     return Promise.race([promise, timeout]);
+}
+
+// Marks a message \Deleted and expunges it so it's actually removed from
+// the server, not just flagged. imap-simple's deleteMessage() handles both
+// steps. Wrapped in withTimeout so a hung delete can't stall the batch,
+// and wrapped in try/catch so a delete failure doesn't take down the loop.
+async function deleteMessage(connection, uid) {
+    try {
+        await withTimeout(
+            connection.deleteMessage(uid),
+            DELETE_TIMEOUT_MS,
+            "imap deleteMessage"
+        );
+    } catch (delErr) {
+        console.error(`❌ Failed to delete message uid ${uid} from server:`, delErr.message);
+    }
 }
 
 // ─── Core mail reader ────────────────────────────────────────────────────────
@@ -62,21 +79,21 @@ async function readMessages(connection) {
             const emailto = parsed.to?.text.match(/\b([0-9]+@shadowmail\.win)\b/);
             if (!emailto) {
                 console.log(`⏭️  Skipping — no shadowmail recipient in: ${parsed.to?.text}`);
-                await connection.addFlags(item.attributes.uid, "\\Seen");
+                await deleteMessage(connection, item.attributes.uid);
                 continue;
             }
 
             // Guard against missing sender
             if (!parsed.from?.text) {
                 console.warn("⚠️  Skipping — email has no sender");
-                await connection.addFlags(item.attributes.uid, "\\Seen");
+                await deleteMessage(connection, item.attributes.uid);
                 continue;
             }
 
             const emailfrom = parsed.from.text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
             if (!emailfrom) {
                 console.warn(`⚠️  Skipping — couldn't parse sender address from: ${parsed.from.text}`);
-                await connection.addFlags(item.attributes.uid, "\\Seen");
+                await deleteMessage(connection, item.attributes.uid);
                 continue;
             }
 
@@ -89,7 +106,7 @@ async function readMessages(connection) {
             const addressRow = db.prepare("SELECT id FROM address WHERE id = ?").get(addressId);
             if (!addressRow) {
                 console.warn(`⚠️  Skipping — address ${addressId} not found in DB (expired or never existed)`);
-                await connection.addFlags(item.attributes.uid, "\\Seen");
+                await deleteMessage(connection, item.attributes.uid);
                 continue;
             }
 
@@ -102,9 +119,10 @@ async function readMessages(connection) {
                 "INSERT INTO mail (address_id, sender, subject, body) VALUES (?, ?, ?, ?)"
             ).run(addressId, sender, parsed.subject ?? "(no subject)", cleanHtml);
 
-            await connection.addFlags(item.attributes.uid, "\\Seen");
+            // Stored locally — now remove it from the IMAP server entirely.
+            await deleteMessage(connection, item.attributes.uid);
 
-            console.log(`✅ Stored email from ${sender} → ${addressId}`);
+            console.log(`✅ Stored email from ${sender} → ${addressId} (removed from server)`);
         } catch (itemErr) {
             // Don't let one bad email kill the whole batch
             console.error("❌ Failed to process a message, skipping:", itemErr.message);
@@ -175,4 +193,3 @@ export default async function parseMails() {
         await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
     }
 }
-
