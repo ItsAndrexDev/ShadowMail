@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import 'dotenv/config'
 import imaps from "imap-simple";
+import { readFileSync } from 'fs';
 const IMAP_CONFIG = {
     imap: {
         user: process.env.IMAP_USER,
