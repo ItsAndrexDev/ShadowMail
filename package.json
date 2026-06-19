@@ -24,6 +24,7 @@
     "juice": "^11.0.3",
     "mailparser": "^3.7.4",
     "path": "^0.12.7",
+    "sqlite-gui-node": "^1.4.0",
     "sqlite3": "^5.1.7",
     "uuid": "^13.0.0"
   }
