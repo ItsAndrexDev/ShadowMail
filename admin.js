@@ -1,5 +1,5 @@
-import express from express
-import sqlite3 from sqlite3.verbose()
+import express from "express"
+import sqlite3 from "sqlite3"
 import { SqliteGuiNodeMiddleware } from "sqlite-gui-node";
 
 const PORT = 8082;
