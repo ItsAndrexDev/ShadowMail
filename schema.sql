@@ -1,0 +1,42 @@
+PRAGMA foreign_keys=OFF;
+BEGIN TRANSACTION;
+
+-- 1. Users Table
+CREATE TABLE IF NOT EXISTS "users"(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. Address Table
+CREATE TABLE IF NOT EXISTS "address" (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 3. Sessions Table
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  user_id INTEGER,
+  expires DATETIME,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+DROP VIEW IF EXISTS valid_sessions;
+CREATE VIEW valid_sessions AS SELECT * FROM sessions WHERE expires > datetime('now');
+
+-- 4. Mail Table
+CREATE TABLE IF NOT EXISTS "mail" (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  address_id INTEGER NOT NULL,
+  sender TEXT NOT NULL,
+  subject TEXT,
+  body TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (address_id) REFERENCES address(id) ON DELETE CASCADE
+);
+
+COMMIT;
+PRAGMA foreign_keys=ON;

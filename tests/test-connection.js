@@ -16,11 +16,17 @@ const IMAP_CONFIG = {
 };
 
 try {
-    const db = new Database(':memory:'); 
-    console.log("✅ Database module loaded and initialized!");
-
     const connection = await imaps.connect(IMAP_CONFIG);
     console.log("✅ IMAP connected");
+    
+    const db = new Database('shadowmail.db'); 
+    db.pragma("foreign_keys = ON");
+    
+    const schema = readFileSync('./schema.sql', 'utf8');
+    db.exec(schema);
+
+    console.log("✅ Database module loaded and initialized!");
+
     process.exit(0);
 } catch (e) {
     console.error("❌ Test failed: " + e.message);

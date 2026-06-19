@@ -6,11 +6,24 @@ import bcrypt from "bcrypt";
 import cors from "cors"
 import parseMails from "./parseMails.mjs";
 import updateUsercount from "./usercountPolling.mjs";
-import { readFile } from "fs";
+import { readFile,readFileSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { count } from "console";
 const db = new Database("shadowmail.db");
+
+
+try {
+  db.pragma("foreign_keys = ON");
+
+  const schema = readFileSync('./schema.sql', 'utf8');
+  db.exec(schema);
+
+  console.log("Database initialized safely. Zero data lost.");
+} catch (err) {
+  console.error("Schema initialization failed:", err.message);
+  process.exit(1); // Stop the server if the database fails to load properly
+}
 
 
 const app = express()
