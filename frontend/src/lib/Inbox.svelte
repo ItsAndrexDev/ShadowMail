@@ -9,7 +9,6 @@
     } from "../stores/page";
 
     $: selectedAddress = $currentAddress;
-    $: selectedEmail = $currentEmail;
     $: previewActive = $isPreviewActive;
     async function refreshSelectedInbox() {
         if (!selectedAddress.email) return;
