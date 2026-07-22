@@ -3,7 +3,7 @@
   import { showPopup, API, currentAddress, slots } from "../stores/page";
   import EmailPreview from "./EmailPreview.svelte";
   import Inbox from "./Inbox.svelte";
-
+  import { onMount, onDestroy } from 'svelte';
   // reactive store subscriptions
   $: selectedAddress = $currentAddress;
 
@@ -85,6 +85,15 @@
 
   getExistingSlots();
 
+  // Auto-Refresh every 1 sec
+  let interval;
+  onMount(() => {
+    interval = setInterval(getExistingSlots, 1000)
+  })
+  onDestroy(() => {
+    clearInterval(interval)
+  })
+
   async function generateNewSlot() {
     const res = await fetch(API + "/new-address", {
       method: "POST",
@@ -153,9 +162,6 @@
           <div style="display: flex; align-items: center; gap: 1rem;">
             <button class="btn btn-primary" on:click={generateNewSlot}
               >➕ Create New Email</button
-            >
-            <button class="btn btn-secondary" on:click={getExistingSlots}
-              >Refresh All</button
             >
             <span style="color: var(--text-secondary);" id="slotCounter">
               {$slots.length}/12 slots used

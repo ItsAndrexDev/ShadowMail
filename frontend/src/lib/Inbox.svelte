@@ -106,9 +106,6 @@
       <div class="email-time">Each email will self-delete in 10 days.</div>
     </div>
     <div style="display: flex; gap: 1rem; align-items: center;">
-      <button class="btn btn-primary btn-sm" on:click={refreshSelectedInbox}
-        >↻ Refresh</button
-      >
       <button class="btn btn-danger btn-sm" on:click={clearSelectedInbox}
         >Clear All</button
       >
