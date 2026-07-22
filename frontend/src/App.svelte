@@ -50,7 +50,7 @@
   </nav>
 
   {#if $page === "home"}
-    <Home />
+    <Account />
   {:else if $page === "login"}
     <Login />
   {:else if $page === "register"}
