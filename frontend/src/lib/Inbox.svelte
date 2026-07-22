@@ -129,8 +129,8 @@
           title="Delete email"
         >
           <svg
-            width="16"
-            height="16"
+            width="26"
+            height="26"
             viewBox="0 0 32 32"
             enable-background="new 0 0 32 32"
             version="1.1"
@@ -163,12 +163,11 @@
       <div
         style="padding: 3rem; text-align: center; color: var(--text-secondary);"
       >
-        📫 Select an email slot to view its inbox
+        📫 Send an email! Don't be scared!
       </div>
     {/if}
   </div>
 </main>
-
 <style>
   .inbox-header {
     padding: 1.5rem;
@@ -199,7 +198,7 @@
     padding: 1.5rem;
     cursor: pointer;
     flex: 1;
-    border-bottom: none; /* Handled by row now */
+    border-bottom: none;
   }
 
   .delete-btn {
@@ -207,15 +206,20 @@
     border: none;
     cursor: pointer;
     padding: 1rem;
+    margin-right: 0.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0.7;
-    transition: opacity 0.2s ease;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    opacity: 0.75;
   }
 
   .delete-btn:hover {
     opacity: 1;
+    transform: scale(1.1);
+    background: rgba(239, 68, 64, 0.1);
+    box-shadow: 0 0 12px rgba(239, 68, 64, 0.4);
   }
 
   .email-subject {
