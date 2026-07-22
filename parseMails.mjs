@@ -79,7 +79,6 @@ async function readMessages(connection) {
             const emailto = parsed.to?.text.match(/\b([0-9]+@shadowmail\.win)\b/);
             if (!emailto) {
                 console.log(`⏭️  Skipping — no shadowmail recipient in: ${parsed.to?.text}`);
-                await deleteMessage(connection, item.attributes.uid);
                 continue;
             }
 
