@@ -1,3 +1,5 @@
+// parseMails.mjs
+
 import imaps from "imap-simple";
 import { simpleParser } from "mailparser";
 import Database from "better-sqlite3";
@@ -15,21 +17,13 @@ const IMAP_CONFIG = {
         host: cfg.HOST,
         port: 993,
         tls: true,
-        authTimeout: 3000,
-        tlsOptions: {
-            rejectUnauthorized: false,
-        },
+        authTimeout: 10000,
+        tlsOptions: { rejectUnauthorized: false },
     },
 };
 
-const POLL_INTERVAL_MS     = 2000;
-const READ_TIMEOUT_MS      = 15000;
-const SEARCH_TIMEOUT_MS    = 10000;
-const DELETE_TIMEOUT_MS    = 10000;
-const KEEPALIVE_INTERVAL_MS = 30000;
-const RECONNECT_EVERY      = 300; // reconnect every ~10 minutes (300 × 2s polls)
-
-// ─── Utility ────────────────────────────────────────────────────────────────
+const POLL_INTERVAL_MS = 10000; // Increased to 10s to prevent IMAP rate-limiting
+const SEARCH_TIMEOUT_MS = 25000; // Increased to give IMAP searches enough time
 
 function withTimeout(promise, ms, label) {
     const timeout = new Promise((_, reject) =>
@@ -38,29 +32,10 @@ function withTimeout(promise, ms, label) {
     return Promise.race([promise, timeout]);
 }
 
-// Marks a message \Deleted and expunges it so it's actually removed from
-// the server, not just flagged. imap-simple's deleteMessage() handles both
-// steps. Wrapped in withTimeout so a hung delete can't stall the batch,
-// and wrapped in try/catch so a delete failure doesn't take down the loop.
-async function deleteMessage(connection, uid) {
-    try {
-        await withTimeout(
-            connection.deleteMessage(uid),
-            DELETE_TIMEOUT_MS,
-            "imap deleteMessage"
-        );
-    } catch (delErr) {
-        console.error(`❌ Failed to delete message uid ${uid} from server:`, delErr.message);
-    }
-}
-
-// ─── Core mail reader ────────────────────────────────────────────────────────
-
 async function readMessages(connection) {
-    await connection.openBox("INBOX");
-
+    // Search directly assuming box is already open, or wrap opening cleanly
     const searchCriteria = ["UNSEEN"];
-    const fetchOptions   = { bodies: [""] };
+    const fetchOptions = { bodies: [""], markSeen: true };
 
     const messages = await withTimeout(
         connection.search(searchCriteria, fetchOptions),
@@ -68,49 +43,38 @@ async function readMessages(connection) {
         "imap search"
     );
 
-    if (messages.length === 0) return;
+    if (!messages || messages.length === 0) return;
 
     for (const item of messages) {
         try {
-            const raw    = item.parts[0].body;
+            const raw = item.parts[0].body;
             const parsed = await simpleParser(raw);
 
-            // Use flexible match — parsed.to.text may include display names e.g. "John <123@shadowmail.win>"
             const emailto = parsed.to?.text.match(/\b([0-9]+@shadowmail\.win)\b/);
-            if (!emailto) {
-                console.log(`⏭️  Skipping — no shadowmail recipient in: ${parsed.to?.text}`);
-                continue;
-            }
+            if (!emailto) continue;
 
-            // Guard against missing sender
             if (!parsed.from?.text) {
-                console.warn("⚠️  Skipping — email has no sender");
-                await deleteMessage(connection, item.attributes.uid);
+                await connection.deleteMessage(item.attributes.uid);
                 continue;
             }
 
             const emailfrom = parsed.from.text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
             if (!emailfrom) {
-                console.warn(`⚠️  Skipping — couldn't parse sender address from: ${parsed.from.text}`);
-                await deleteMessage(connection, item.attributes.uid);
+                await connection.deleteMessage(item.attributes.uid);
                 continue;
             }
 
             const addressId = parseInt(emailto[1], 10);
-            const sender    = emailfrom[0];
+            const sender = emailfrom[0];
 
-            // Verify the address actually exists in the DB before inserting —
-            // avoids SQLITE_CONSTRAINT_FOREIGNKEY when mail arrives for an
-            // expired/non-existent shadowmail address.
             const addressRow = db.prepare("SELECT id FROM address WHERE id = ?").get(addressId);
             if (!addressRow) {
-                console.warn(`⚠️  Skipping — address ${addressId} not found in DB (expired or never existed)`);
-                await deleteMessage(connection, item.attributes.uid);
+                await connection.deleteMessage(item.attributes.uid);
                 continue;
             }
 
-            const htmlBody  = parsed.html || parsed.textAsHtml || "<p>(no content)</p>";
-            const window    = new JSDOM("").window;
+            const htmlBody = parsed.html || parsed.textAsHtml || "<p>(no content)</p>";
+            const window = new JSDOM("").window;
             const DOMPurify = createDOMPurify(window);
             const cleanHtml = juice(DOMPurify.sanitize(htmlBody));
 
@@ -118,24 +82,20 @@ async function readMessages(connection) {
                 "INSERT INTO mail (address_id, sender, subject, body) VALUES (?, ?, ?, ?)"
             ).run(addressId, sender, parsed.subject ?? "(no subject)", cleanHtml);
 
-            // Stored locally — now remove it from the IMAP server entirely.
-            await deleteMessage(connection, item.attributes.uid);
-
-            console.log(`✅ Stored email from ${sender} → ${addressId} (removed from server)`);
+            await connection.deleteMessage(item.attributes.uid);
+            console.log(`✅ Stored email from ${sender} → ${addressId}`);
         } catch (itemErr) {
-            // Don't let one bad email kill the whole batch
-            console.error("❌ Failed to process a message, skipping:", itemErr.message);
+            console.error("❌ Failed to process message:", itemErr.message);
         }
     }
 }
-
-// ─── Connection ──────────────────────────────────────────────────────────────
 
 async function connectWithRetry() {
     while (true) {
         try {
             const connection = await imaps.connect(IMAP_CONFIG);
-            console.log("✅ IMAP connected");
+            await connection.openBox("INBOX");
+            console.log("✅ IMAP connected and INBOX opened");
             return connection;
         } catch (err) {
             console.error("❌ IMAP connection failed, retrying in 5s...", err.message);
@@ -144,51 +104,20 @@ async function connectWithRetry() {
     }
 }
 
-
-
-
-function startKeepalive(getConnection) {
-    return setInterval(() => {
-        const conn = getConnection();
-        conn?.imap?.noop?.((err) => {
-            if (err) console.warn("⚠️  NOOP failed:", err.message);
-        });
-    }, KEEPALIVE_INTERVAL_MS);
-}
-
-// ─── Main loop ───────────────────────────────────────────────────────────────
-
 export default async function parseMails() {
-    console.log("⏳ Checking for emails every 2 seconds...\n");
-
-    let connection   = await connectWithRetry();
-    let pollCount    = 0;
-    let keepalive    = startKeepalive(() => connection);
+    console.log("⏳ Checking for emails...");
+    let connection = await connectWithRetry();
 
     while (true) {
         try {
-            await withTimeout(readMessages(connection), READ_TIMEOUT_MS, "readMessages");
-            console.log("checking emails...");
+            await readMessages(connection);
         } catch (err) {
-            console.error("❌ Error or timeout — reconnecting...", err.message);
-            clearInterval(keepalive);
-            try { await connection.end(); } catch (_) {}
+            console.error("❌ Error during mail fetch — reconnecting...", err.message);
+            try { connection.end(); } catch (_) {}
             connection = await connectWithRetry();
-            keepalive  = startKeepalive(() => connection);
-            pollCount  = 0;
         }
 
-        // Periodic proactive reconnect to prevent silent stale connections
-        pollCount++;
-        if (pollCount >= RECONNECT_EVERY) {
-            console.log("🔄 Scheduled reconnect...");
-            clearInterval(keepalive);
-            try { await connection.end(); } catch (_) {}
-            connection = await connectWithRetry();
-            keepalive  = startKeepalive(() => connection);
-            pollCount  = 0;
-        }
-
+        // Wait for interval before next poll cycle
         await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
     }
 }
